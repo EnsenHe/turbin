@@ -1,9 +1,14 @@
 #!/usr/bin/ruby
 # -*- coding: utf-8 -*-
+#---- by favare_a ----
+#file: turbin.rb
+
 require 'socket'
 require 'openssl'
 require 'base64'
 require 'digest'
+require 'io/console'
+require 'open3'
 
 class Netsoul
   attr_accessor :login
@@ -51,7 +56,7 @@ class Netsoul
     challenge = Digest::MD5.new
     challenge.update "#{data[2]}-#{data[3]}/#{data[4]}#{@mdp}"
     @next = method(:ns_state)
-    send "ext_user_log #{@login} #{challenge.hexdigest} none Turbin" 
+    send "ext_user_log #{@login} #{challenge.hexdigest} Turbin Turbin" 
   end
   def ns_ext_user_log_hash(hash)
     @next = method(:ns_state)
@@ -130,25 +135,42 @@ class TurbinClient
     end
   end
   def add_log(login, password)
-    @socket.puts "add_user #{login} #{password}"
+    @socket.puts "add_user #{login} #{Base64.encode64(password)}"
   end
 end
 
+def usage
+  puts "turbin [start | stop]"
+  return 0
+end
+
 begin
-  Process.daemon
-  tb = TurbinClient.new("127.0.0.1", 9899)
-  tb.connect
-  ns = Netsoul.new(ARGV[0], ARGV[1])
-  ns.connect
-  ns.loop
-  sleep(2)
-  if !ns.isauth
-    puts "Echec de la connection."
-    exit (1)
+  exit usage if ARGV.length != 1
+  if ARGV[0] == "start"
+    Open3.popen3 "~/bin/turbin_serv.rb"
+    sleep 0.5
+    print "Login : "
+    login = $stdin.gets.chomp
+    print "Password : "
+    password = $stdin.noecho(&:gets).chomp
+    print "\n"
+    tb = TurbinClient.new("127.0.0.1", 9899)
+    tb.connect
+    ns = Netsoul.new(login, password)
+    ns.connect
+    ns.loop
+    sleep 0.5
+    if !ns.isauth
+      puts "Echec de la connection."
+    else
+      tb.add_log(login, password)
+      tb.loop
+      Process.daemon
+    end
+  elsif ARGV[0] == "stop"
+    system("pkill turbin --signal 9")
+    exit
   end
-  tb.add_log("favare_a", "wo9lZ,*m")
-  tb.loop
 rescue
   puts "#{$!}."
-  retry
 end
