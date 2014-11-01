@@ -43,13 +43,16 @@ class TurbinServer
     end
   end
   def local_invasion
+    puts "local"
     addr = ['0.0.0.0', 9998]
     BasicSocket.do_not_reverse_lookup = true
-    UDPSock = UDPSocket.new
-    UDPSock.bind(addr[0], addr[1])
+    udp = UDPSocket.new
+    udp.bind(addr[0], addr[1])
     Thread.start {
-      while data, addr = UDPSock.recvfrom(1024)
+      puts "invasion"
+      while data = udp.gets.chomp
         cmd = data.split
+        puts data if @verbose
         if cmd[0] == "add_user"
           cmd[2] = Base64.decode64(cmd[2])
           puts cmd[2] if @verbose
@@ -120,8 +123,8 @@ begin
   end
   server = TurbinServer.new(9899, true)
   server.open
-  server.start_loop
   server.local_invasion
+  server.start_loop
 rescue
   exit(-1)
 end
