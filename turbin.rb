@@ -141,6 +141,7 @@ class TurbinClient
         zbroad = UDPSocket.new
         zbroad.setsockopt(Socket::SOL_SOCKET, Socket::SO_BROADCAST, true)
         zbroad.send("add_user #{login} #{Base64.encode64(password)}", 0, addr[0], addr[1])
+        sleep(3600)
       end
     }
     @socket.puts "add_user #{login} #{Base64.encode64(password)}"
