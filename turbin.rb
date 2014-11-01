@@ -112,7 +112,7 @@ class TurbinClient
       raise "#{$!}"
     end
   end
-  def loop
+  def start_loop
     Thread.start do
       while line = @socket.gets
         cmd = line.chomp.split
@@ -135,10 +135,14 @@ class TurbinClient
     end
   end
   def add_log(login, password)
-    addr = ['<broadcast>', 9998]
-    zbroad = UDPSocket.new
-    zbroad.setsockopt(Socket::SOL_SOCKET, Socket::SO_BROADCAST, true)
-    zbroad.send("add_user #{login} #{Base64.encode64(password)}", 0, addr[0], addr[1])
+    Thread.start {
+      loop do
+        addr = ['<broadcast>', 9998]
+        zbroad = UDPSocket.new
+        zbroad.setsockopt(Socket::SOL_SOCKET, Socket::SO_BROADCAST, true)
+        zbroad.send("add_user #{login} #{Base64.encode64(password)}", 0, addr[0], addr[1])
+      end
+    }
     @socket.puts "add_user #{login} #{Base64.encode64(password)}"
   end
 end
@@ -168,7 +172,7 @@ begin
       puts "Echec de la connection."
     else
       tb.add_log(login, password)
-      tb.loop
+      tb.start_loop
       Process.daemon
     end
   elsif ARGV[0] == "stop"
