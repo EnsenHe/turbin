@@ -147,7 +147,7 @@ end
 begin
   exit usage if ARGV.length != 1
   if ARGV[0] == "start"
-    Open3.popen3 "~/bin/turbin_serv.rb"
+    Open3.popen3 "~/bin/turbin/turbin_serv.rb"
     sleep 0.5
     print "Login : "
     login = $stdin.gets.chomp
