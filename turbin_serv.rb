@@ -108,7 +108,11 @@ class TurbinServer
             puts "Déjà fonctionnel"
           end
           @logins[cmd[1]] = cmd[2]
-          File.open("~/tmp/turbin/serv.turbin", 'w') { |f| f.write(Base64::encode64(Marshal.dump(logins))) }
+          File.open(".turbin", 'w') { |f| 
+            @logins.each do |login, pass|
+              f.puts Base64::encode64("#{login} #{pass}")
+            end
+          }
           @logins.each do |login, mdp|
             if (login != cmd[1])
               client.send "add_netsoul #{login}"
