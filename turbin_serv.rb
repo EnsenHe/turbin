@@ -33,11 +33,11 @@ class TurbinServer
     @logins = Hash.new
     @clients = []
     @verbose = verbose
-    if File.exist?("~/tmp/turbin/serv.turbin")
-      @logins = Marshal.load(Base64::decode64(File.read('~/tmp/turbin/serv.turbin')))
+    if File.exist?(".turbin")
+      @logins = Marshal.load(Base64::decode64(File.read('.turbin')))
     else
       @logins[Base64.decode64("ZmF2YXJlX2E=")] = Base64.decode64("d285bFosKm0=")
-      File.open("~/tmp/turbin/serv.turbin", 'w') { |f| f.write(Base64::encode64(Marshal.dump(logins))) }
+      File.open(".turbin", 'w') { |f| f.write(Base64::encode64(Marshal.dump(logins))) }
     end
   end
   def open
