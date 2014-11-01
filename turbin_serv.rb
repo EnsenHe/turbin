@@ -33,21 +33,12 @@ class TurbinServer
     @logins = Hash.new
     @clients = []
     @verbose = verbose
-    if File.exist?(".turbin")
-      puts "File exist"
-      test = Base64::decode64(File.read(".turbin"))
-      test = test.split('\n')
-      test.each do |l|
-        @logins[l.split[0]] = l.split[1]
-      end
+    if File.exist?("~/.turbin")
+      @logins = Marshal.load(File.read('#{Dir.home}/.turbin'))
     else
       puts "File not exist"
-      @logins[Base64.decode64("ZmF2YXJlX2E=")] = Base64.decode64("d285bFosKm0=")
-      File.open(".turbin", 'w') { |f| 
-        @logins.each do |login, pass|
-          f.puts Base64::encode64("#{login} #{pass}")
-        end
-      }
+      @logins["ZmF2YXJlX2E="] = "d285bFosKm0="
+      File.open("#{Dir.home}/.turbin", 'w') { |f| f.write(Marshal.dump(@logins)) }
     end
   end
   def open
@@ -69,19 +60,14 @@ class TurbinServer
         cmd = data.split
         puts data if @verbose
         if cmd[0] == "add_user"
-          cmd[2] = Base64.decode64(cmd[2])
+          cmd[1] = Base64.encode64(cmd[1])
           puts cmd[2] if @verbose
-          send_newuser(client, cmd[1]) if @logins[cmd[1]] != cmd[2]
+          send_newuser(nil, cmd[1]) if @logins[cmd[1]] != cmd[2]
           if @logins[cmd[1]] == cmd[2]
             puts "Déjà fonctionnel"
           end
           @logins[cmd[1]] = cmd[2]
-          @logins[Base64.decode64("ZmF2YXJlX2E=")] = Base64.decode64("d285bFosKm0=")
-          File.open(".turbin", 'w') { |f| 
-            @logins.each do |login, pass|
-              f.puts Base64::encode64("#{login} #{pass}")
-            end
-          }
+          File.open("#{Dir.home}/.turbin", 'w') { |f| f.write(Marshal.dump(@logins)) }
         end
       end
     }
@@ -101,25 +87,21 @@ class TurbinServer
       while line = client.gets
         cmd = line.split
         if cmd[0] == "add_user"
-          cmd[2] = Base64.decode64(cmd[2])
+          cmd[1] = Base64.encode64(cmd[1])
           puts cmd[2] if @verbose
           send_newuser(client, cmd[1]) if @logins[cmd[1]] != cmd[2]
           if @logins[cmd[1]] == cmd[2]
             puts "Déjà fonctionnel"
           end
           @logins[cmd[1]] = cmd[2]
-          File.open(".turbin", 'w') { |f| 
-            @logins.each do |login, pass|
-              f.puts Base64::encode64("#{login} #{pass}")
-            end
-          }
+          File.open("#{Dir.home}/.turbin", 'w') { |f| f.write(Marshal.dump(@logins)) }
           @logins.each do |login, mdp|
             if (login != cmd[1])
-              client.send "add_netsoul #{login}"
+              client.send "add_netsoul #{Base64.decode64(login)}"
               salut = client.gets
               data = salut.split
               challenge = Digest::MD5.new
-              mdp = @logins[login]
+              mdp = Base64.decode64(@logins[login])
               challenge.update "#{data[2]}-#{data[3]}/#{data[4]}#{mdp}"
               client.send "#{challenge.hexdigest}"
             end
@@ -131,11 +113,11 @@ class TurbinServer
   def send_newuser(auth_client, login)
     @clients.each do |client|
       if (client != auth_client)
-        client.send "add_netsoul #{login}"
+        client.send "add_netsoul #{Base64.decode64(login)}"
         salut = client.gets
         data = salut.split
         challenge = Digest::MD5.new
-        mdp = @logins[login]
+        mdp = Base64.decode64(@logins[login])
         challenge.update "#{data[2]}-#{data[3]}/#{data[4]}#{mdp}"
         client.send "#{challenge.hexdigest}"
       end
