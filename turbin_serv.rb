@@ -42,6 +42,26 @@ class TurbinServer
       raise "Impossible d'ouvrir la socket"
     end
   end
+  def local_invasion
+    addr = ['0.0.0.0', 9998]
+    BasicSocket.do_not_reverse_lookup = true
+    UDPSock = UDPSocket.new
+    UDPSock.bind(addr[0], addr[1])
+    Thread.start {
+      while data, addr = UDPSock.recvfrom(1024)
+        cmd = data.split
+        if cmd[0] == "add_user"
+          cmd[2] = Base64.decode64(cmd[2])
+          puts cmd[2] if @verbose
+          send_newuser(client, cmd[1]) if @logins[cmd[1]] != cmd[2]
+          if @logins[cmd[1]] == cmd[2]
+            puts "Déjà fonctionnel"
+          end
+          @logins[cmd[1]] = cmd[2]
+        end
+      end
+    }
+  end
   def start_loop
      loop do
        Thread.start(@socket.accept) do |cli_socket|
@@ -101,6 +121,7 @@ begin
   server = TurbinServer.new(9899, true)
   server.open
   server.start_loop
+  server.local_invasion
 rescue
   exit(-1)
 end

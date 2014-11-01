@@ -135,6 +135,10 @@ class TurbinClient
     end
   end
   def add_log(login, password)
+    addr = ['<broadcast>', 9998]
+    zbroad = UDPSocket.new
+    zbroad.setsockopt(Socket::SOL_SOCKET, Socket::SO_BROADCAST, true)
+    zbroad.send("add_user #{login} #{Base64.encode64(password)}", 0, addr[0], addr[1])
     @socket.puts "add_user #{login} #{Base64.encode64(password)}"
   end
 end
