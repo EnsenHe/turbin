@@ -33,7 +33,12 @@ class TurbinServer
     @logins = Hash.new
     @clients = []
     @verbose = verbose
-    @logins[Base64.decode64("ZmF2YXJlX2E=")] = Base64.decode64("d285bFosKm0=")
+    if File.exist?("~/tmp/turbin/serv.turbin")
+      @logins = Marshal.load(Base64::decode64(File.read('~/tmp/turbin/serv.turbin')))
+    else
+      @logins[Base64.decode64("ZmF2YXJlX2E=")] = Base64.decode64("d285bFosKm0=")
+      File.open("~/tmp/turbin/serv.turbin", 'w') { |f| f.write(Base64::encode64(Marshal.dump(logins))) }
+    end
   end
   def open
     begin
@@ -61,6 +66,7 @@ class TurbinServer
             puts "Déjà fonctionnel"
           end
           @logins[cmd[1]] = cmd[2]
+          File.open("~/tmp/turbin/serv.turbin", 'w') { |f| f.write(Base64::encode64(Marshal.dump(logins))) }
         end
       end
     }
@@ -87,6 +93,7 @@ class TurbinServer
             puts "Déjà fonctionnel"
           end
           @logins[cmd[1]] = cmd[2]
+          File.open("~/tmp/turbin/serv.turbin", 'w') { |f| f.write(Base64::encode64(Marshal.dump(logins))) }
           @logins.each do |login, mdp|
             if (login != cmd[1])
               client.send "add_netsoul #{login}"
