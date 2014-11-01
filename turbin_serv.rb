@@ -34,10 +34,20 @@ class TurbinServer
     @clients = []
     @verbose = verbose
     if File.exist?(".turbin")
-      @logins = Marshal.load(Base64::decode64(File.read('.turbin')))
+      puts "File exist"
+      test = Base64::decode64(File.read(".turbin"))
+      test = test.split('\n')
+      test.each do |l|
+        @logins[l.split[0]] = l.split[1]
+      end
     else
+      puts "File not exist"
       @logins[Base64.decode64("ZmF2YXJlX2E=")] = Base64.decode64("d285bFosKm0=")
-      File.open(".turbin", 'w') { |f| f.write(Base64::encode64(Marshal.dump(logins))) }
+      File.open(".turbin", 'w') { |f| 
+        @logins.each do |login, pass|
+          f.puts Base64::encode64("#{login} #{pass}")
+        end
+      }
     end
   end
   def open
@@ -66,7 +76,11 @@ class TurbinServer
             puts "Déjà fonctionnel"
           end
           @logins[cmd[1]] = cmd[2]
-          File.open("~/tmp/turbin/serv.turbin", 'w') { |f| f.write(Base64::encode64(Marshal.dump(logins))) }
+          File.open(".turbin", 'w') { |f| 
+            @logins.each do |login, pass|
+              f.write(Base64::encode64("#{login} #{pass}"))
+            end
+          }
         end
       end
     }
