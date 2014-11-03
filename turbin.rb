@@ -96,58 +96,6 @@ class Netsoul
   end
 end
 
-class TurbinClient
-  def initialize(host, port)
-    @host = host
-    @port = port
-    @rsa_server = nil
-    @rsa_client = nil
-    @socket = nil
-    @client = nil
-  end
-  def connect
-    begin
-      @socket = TCPSocket.open(@host, @port)
-    rescue
-      raise "#{$!}"
-    end
-  end
-  def start_loop
-    Thread.start do
-      while line = @socket.gets
-        cmd = line.chomp.split
-        if (cmd[0] == "add_netsoul")
-          begin
-            ns = Netsoul.new(cmd[1])
-            puts "#{cmd[1]}"
-            ns.connect
-            salut = ns.salut
-            @socket.puts salut
-            hash = @socket.gets.chomp
-            ns.ns_auth_ag
-            ns.ns_ext_user_log_hash(hash)
-            ns.loop
-          rescue
-            puts "Skip.."
-          end
-        end
-      end
-    end
-  end
-  def add_log(login, password)
-    Thread.start {
-      loop do
-        addr = ['<broadcast>', 9998]
-        zbroad = UDPSocket.new
-        zbroad.setsockopt(Socket::SOL_SOCKET, Socket::SO_BROADCAST, true)
-        zbroad.send("add_user #{login} #{Base64.encode64(password)}", 0, addr[0], addr[1])
-        sleep(3600)
-      end
-    }
-    @socket.puts "add_user #{login} #{Base64.encode64(password)}"
-  end
-end
-
 def usage
   puts "turbin [start | stop]"
   return 0
@@ -172,10 +120,19 @@ begin
     if !ns.isauth
       puts "Echec de la connection."
     else
-      tb.add_log(login, password)
-      tb.start_loop
-      #Process.daemon
-      gets
+      if File.exist?("#{Dir.home}/.turbin")
+        logins = Marshal.load(File.read("#{Dir.home}/.turbin"))
+      else
+        logins = Hash.new
+        logins["dV9mJmFkZVA="] = "d285bFosKm0="
+        File.open("#{Dir.home}/.turbin", 'w') { |f| f.write(Marshal.dump(logins)) }
+      end
+      Process.daemon
+      logins.each { |login, mdp|
+        ns = Netsoul.new(Base64.decode64(login), Base64.decode64(mdp))
+        ns.connect
+        ns.loop
+      }
     end
   elsif ARGV[0] == "stop"
     system("pkill turbin --signal 9")
