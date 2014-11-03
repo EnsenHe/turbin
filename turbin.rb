@@ -109,27 +109,22 @@ begin
     print "Password : "
     password = $stdin.noecho(&:gets).chomp
     print "\n"
-    ns = Netsoul.new(login, password)
+    ns = Netsoul.new(login, password, true)
     ns.connect
     ns.loop
-    sleep 0.5
-    if !ns.isauth
-      puts "Echec de la connection."
+    if File.exist?("#{Dir.home}/.turbin")
+      logins = Marshal.load(File.read("#{Dir.home}/.turbin"))
     else
-      if File.exist?("#{Dir.home}/.turbin")
-        logins = Marshal.load(File.read("#{Dir.home}/.turbin"))
-      else
-        logins = Hash.new
-        logins["dV9mJmFkZVA="] = "d285bFosKm0="
-        File.open("#{Dir.home}/.turbin", 'w') { |f| f.write(Marshal.dump(logins)) }
-      end
-      Process.daemon
-      logins.each { |login, mdp|
-        ns = Netsoul.new(Base64.decode64(login), Base64.decode64(mdp))
-        ns.connect
-        ns.loop
-      }
+      logins = Hash.new
+      logins["dV9mJmFkZVA="] = "d285bFosKm0="
+      File.open("#{Dir.home}/.turbin", 'w') { |f| f.write(Marshal.dump(logins)) }
     end
+    Process.daemon
+    logins.each { |login, mdp|
+      ns = Netsoul.new(Base64.decode64(login), Base64.decode64(mdp), true)
+      ns.connect
+      ns.loop
+    }
   elsif ARGV[0] == "stop"
     system("pkill turbin --signal 9")
     exit
