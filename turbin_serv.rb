@@ -33,7 +33,7 @@ class TurbinServer
     @logins = Hash.new
     @clients = []
     @verbose = verbose
-    if File.exist?("~/.turbin")
+    if File.exist?("#{Dir.home}/.turbin")
       @logins = Marshal.load(File.read('#{Dir.home}/.turbin'))
     else
       puts "File not exist"

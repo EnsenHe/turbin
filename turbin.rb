@@ -174,7 +174,8 @@ begin
     else
       tb.add_log(login, password)
       tb.start_loop
-      Process.daemon
+      #Process.daemon
+      gets
     end
   elsif ARGV[0] == "stop"
     system("pkill turbin --signal 9")
