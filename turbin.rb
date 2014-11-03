@@ -109,8 +109,6 @@ begin
     print "Password : "
     password = $stdin.noecho(&:gets).chomp
     print "\n"
-    tb = TurbinClient.new("127.0.0.1", 9899)
-    tb.connect
     ns = Netsoul.new(login, password)
     ns.connect
     ns.loop
